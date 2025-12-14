@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/index.vercel.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "src/index.vercel.ts"
+    },
+    {
+      "src": "/webhooks/(.*)",
+      "dest": "src/index.vercel.ts"
+    },
+    {
+      "src": "/health",
+      "dest": "src/index.vercel.ts"
+    },
+    {
+      "src": "/docs(.*)",
+      "dest": "src/index.vercel.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "src/index.vercel.ts"
+    }
+  ]
+}
+

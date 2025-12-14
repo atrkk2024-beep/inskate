@@ -1,0 +1,416 @@
+// Prisma schema for InSkate v2.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== AUTH ====================
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  country   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  refreshTokens       RefreshToken[]
+  deviceTokens        DeviceToken[]
+  comments            LessonComment[]
+  subscription        Subscription?
+  bookings            Booking[]
+  bookingPackages     BookingPackage[]
+  videoReviews        VideoReview[]
+  videoReviewMessages VideoReviewMessage[]
+  supportTickets      SupportTicket[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  GUEST
+  USER
+  SUBSCRIBER
+  COACH
+  MANAGER
+  ADMIN
+}
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone, code])
+  @@map("auth_codes")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String // ios, android
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+// ==================== CONTENT ====================
+
+model LessonCategory {
+  id        String   @id @default(cuid())
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lessons Lesson[]
+
+  @@map("lesson_categories")
+}
+
+model Lesson {
+  id           String       @id @default(cuid())
+  categoryId   String       @map("category_id")
+  title        String
+  description  String?
+  durationSec  Int          @default(0) @map("duration_sec")
+  thumbnailUrl String?      @map("thumbnail_url")
+  videoUrl     String       @map("video_url")
+  isFree       Boolean      @default(false) @map("is_free")
+  status       LessonStatus @default(DRAFT)
+  order        Int          @default(0)
+  publishedAt  DateTime?    @map("published_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  category LessonCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  comments LessonComment[]
+  views    LessonView[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@map("lessons")
+}
+
+enum LessonStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+}
+
+model LessonComment {
+  id        String        @id @default(cuid())
+  lessonId  String        @map("lesson_id")
+  userId    String        @map("user_id")
+  text      String
+  status    CommentStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([userId])
+  @@map("lesson_comments")
+}
+
+enum CommentStatus {
+  ACTIVE
+  HIDDEN
+}
+
+model LessonView {
+  id           String   @id @default(cuid())
+  lessonId     String   @map("lesson_id")
+  userId       String?  @map("user_id")
+  watchTimeSec Int      @default(0) @map("watch_time_sec")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([userId])
+  @@map("lesson_views")
+}
+
+// ==================== SUBSCRIPTIONS ====================
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  price           Int // in cents
+  currency        String   @default("USD")
+  interval        String   @default("month") // month, year
+  trialDays       Int      @default(0) @map("trial_days")
+  stripeProductId String?  @unique @map("stripe_product_id")
+  stripePriceId   String?  @unique @map("stripe_price_id")
+  features        String[] @default([])
+  active          Boolean  @default(true)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique @map("user_id")
+  planId               String             @map("plan_id")
+  status               SubscriptionStatus @default(TRIAL)
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  trialEndAt           DateTime?          @map("trial_end_at")
+  currentPeriodEndAt   DateTime?          @map("current_period_end_at")
+  canceledAt           DateTime?          @map("canceled_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+// ==================== COACHES & BOOKING ====================
+
+model Coach {
+  id        String   @id @default(cuid())
+  name      String
+  level     String?
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  socials   Json     @default("{}")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  slots        CoachSlot[]
+  bookings     Booking[]
+  packages     BookingPackage[]
+  videoReviews VideoReview[]
+
+  @@map("coaches")
+}
+
+model CoachSlot {
+  id          String   @id @default(cuid())
+  coachId     String   @map("coach_id")
+  startAt     DateTime @map("start_at")
+  endAt       DateTime @map("end_at")
+  isAvailable Boolean  @default(true) @map("is_available")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  coach    Coach     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([coachId])
+  @@index([startAt])
+  @@map("coach_slots")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  coachId       String        @map("coach_id")
+  slotId        String        @map("slot_id")
+  packageId     String?       @map("package_id")
+  type          BookingType   @default(SINGLE)
+  status        BookingStatus @default(PENDING)
+  price         Int           @default(0)
+  currency      String        @default("USD")
+  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach   Coach           @relation(fields: [coachId], references: [id])
+  slot    CoachSlot       @relation(fields: [slotId], references: [id])
+  package BookingPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([userId])
+  @@index([coachId])
+  @@index([status])
+  @@map("bookings")
+}
+
+enum BookingType {
+  SINGLE
+  PACKAGE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model BookingPackage {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  coachId   String   @map("coach_id")
+  total     Int      @default(10)
+  remaining Int      @default(10)
+  price     Int      @default(0)
+  currency  String   @default("USD")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach    Coach     @relation(fields: [coachId], references: [id])
+  bookings Booking[]
+
+  @@index([userId])
+  @@map("booking_packages")
+}
+
+// ==================== VIDEO REVIEWS ====================
+
+model VideoReview {
+  id         String            @id @default(cuid())
+  userId     String            @map("user_id")
+  coachId    String?           @map("coach_id")
+  videoUrl   String            @map("video_url")
+  status     VideoReviewStatus @default(DRAFT)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  resolvedAt DateTime?         @map("resolved_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach    Coach?               @relation(fields: [coachId], references: [id])
+  messages VideoReviewMessage[]
+
+  @@index([userId])
+  @@index([coachId])
+  @@index([status])
+  @@map("video_reviews")
+}
+
+enum VideoReviewStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  DONE
+  REJECTED
+}
+
+model VideoReviewMessage {
+  id         String   @id @default(cuid())
+  reviewId   String   @map("review_id")
+  userId     String   @map("user_id")
+  authorRole String   @map("author_role") // user, coach
+  text       String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  review VideoReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("video_review_messages")
+}
+
+// ==================== SUPPORT ====================
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id")
+  lessonId  String?      @map("lesson_id")
+  topic     String
+  message   String
+  status    TicketStatus @default(OPEN)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// ==================== PUSH NOTIFICATIONS ====================
+
+model PushNotification {
+  id          String    @id @default(cuid())
+  title       String
+  body        String
+  data        Json?
+  segment     String    @default("all") // all, subscribers, non_subscribers
+  scheduledAt DateTime? @map("scheduled_at")
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([scheduledAt])
+  @@map("push_notifications")
+}
+
+// ==================== ADMIN ====================
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+

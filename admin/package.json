@@ -1,0 +1,36 @@
+{
+  "name": "@inskate/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-admin": "^4.16.0",
+    "ra-data-simple-rest": "^4.16.0",
+    "@mui/material": "^5.15.6",
+    "@mui/icons-material": "^5.15.6",
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "recharts": "^2.10.4",
+    "date-fns": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.18.1",
+    "@typescript-eslint/parser": "^6.18.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
+  }
+}
+
