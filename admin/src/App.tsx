@@ -1,5 +1,4 @@
-import { Admin, Resource, CustomRoutes } from 'react-admin';
-import { Route } from 'react-router-dom';
+import { Admin, Resource } from 'react-admin';
 
 import { authProvider } from './providers/authProvider';
 import { dataProvider } from './providers/dataProvider';

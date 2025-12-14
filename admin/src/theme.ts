@@ -78,16 +78,6 @@ export const theme = createTheme({
         },
       },
     },
-    RaDatagrid: {
-      styleOverrides: {
-        root: {
-          '& .RaDatagrid-headerCell': {
-            fontWeight: 600,
-            backgroundColor: '#f8f9fa',
-          },
-        },
-      },
-    },
   },
 });
 
