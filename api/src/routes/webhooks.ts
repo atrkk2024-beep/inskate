@@ -5,11 +5,7 @@ import Stripe from 'stripe';
 
 export async function webhookRoutes(app: FastifyInstance) {
   // Stripe webhooks
-  app.post('/stripe', {
-    config: {
-      rawBody: true,
-    },
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/stripe', async (request: FastifyRequest, reply: FastifyReply) => {
     const signature = request.headers['stripe-signature'] as string;
     
     if (!signature) {

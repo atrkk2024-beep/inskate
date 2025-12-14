@@ -35,13 +35,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
       prisma.subscription.count({
         where: { status: { in: ['TRIAL', 'ACTIVE'] } },
       }),
-      prisma.subscription.aggregate({
+      prisma.subscription.count({
         where: {
           status: 'ACTIVE',
           createdAt: { gte: from, lte: to },
-        },
-        _sum: { 
-          // Note: In real implementation, track payments separately
         },
       }),
       prisma.booking.count({
