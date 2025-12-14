@@ -30,7 +30,7 @@ dependencies:
   shimmer: ^3.0.0
   
   # Video Player
-  youtube_player_flutter: ^9.0.1
+  youtube_player_iframe: ^5.1.2
   
   # Phone Input
   intl_phone_field: ^3.2.0
