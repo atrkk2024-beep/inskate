@@ -29,8 +29,7 @@ dependencies:
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
   
-  # Video Player
-  youtube_player_iframe: ^5.1.2
+  # Video Player - using url_launcher to open videos externally
   
   # Phone Input
   intl_phone_field: ^3.2.0
@@ -66,19 +65,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/images/
-    - assets/icons/
-  
-  fonts:
-    - family: Montserrat
-      fonts:
-        - asset: assets/fonts/Montserrat-Regular.ttf
-        - asset: assets/fonts/Montserrat-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Montserrat-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Montserrat-Bold.ttf
-          weight: 700
 

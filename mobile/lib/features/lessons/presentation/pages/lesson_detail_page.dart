@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:inskate/core/theme/app_theme.dart';
 import 'package:inskate/features/lessons/providers/lessons_provider.dart';
 import 'package:inskate/features/auth/providers/auth_provider.dart';
@@ -16,37 +16,21 @@ class LessonDetailPage extends ConsumerStatefulWidget {
 }
 
 class _LessonDetailPageState extends ConsumerState<LessonDetailPage> {
-  YoutubePlayerController? _controller;
   final _commentController = TextEditingController();
-  double _playbackSpeed = 1.0;
 
   @override
   void dispose() {
-    _controller?.dispose();
     _commentController.dispose();
     super.dispose();
   }
 
-  void _initPlayer(String? videoUrl) {
-    if (videoUrl == null || _controller != null) return;
-
-    final videoId = YoutubePlayer.convertUrlToId(videoUrl);
-    if (videoId != null) {
-      _controller = YoutubePlayerController(
-        initialVideoId: videoId,
-        flags: const YoutubePlayerFlags(
-          autoPlay: false,
-          mute: false,
-          enableCaption: false,
-        ),
-      );
-      setState(() {});
+  Future<void> _openVideo(String? videoUrl) async {
+    if (videoUrl == null) return;
+    
+    final uri = Uri.parse(videoUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
-  }
-
-  void _changeSpeed(double speed) {
-    _controller?.setPlaybackRate(speed);
-    setState(() => _playbackSpeed = speed);
   }
 
   Future<void> _addComment() async {
@@ -77,46 +61,33 @@ class _LessonDetailPageState extends ConsumerState<LessonDetailPage> {
             return const Center(child: Text('Урок не найден'));
           }
 
-          // Initialize player when lesson loads
-          if (lesson.hasAccess && lesson.videoUrl != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _initPlayer(lesson.videoUrl);
-            });
-          }
-
           return CustomScrollView(
             slivers: [
               // Video Player or Locked State
               SliverToBoxAdapter(
-                child: lesson.hasAccess && _controller != null
-                    ? Column(
-                        children: [
-                          YoutubePlayer(
-                            controller: _controller!,
-                            showVideoProgressIndicator: true,
-                            progressIndicatorColor: AppColors.primary,
-                          ),
-                          // Playback speed controls
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text('Скорость: '),
-                                ...([0.5, 0.75, 1.0, 1.25, 1.5, 2.0]).map((speed) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: ChoiceChip(
-                                      label: Text('${speed}x'),
-                                      selected: _playbackSpeed == speed,
-                                      onSelected: (_) => _changeSpeed(speed),
-                                    ),
-                                  );
-                                }),
-                              ],
+                child: lesson.hasAccess
+                    ? Container(
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          image: lesson.thumbnailUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(lesson.thumbnailUrl!),
+                                  fit: BoxFit.cover,
+                                  opacity: 0.7,
+                                )
+                              : null,
+                        ),
+                        child: Center(
+                          child: IconButton(
+                            onPressed: () => _openVideo(lesson.videoUrl),
+                            icon: const Icon(
+                              Icons.play_circle_fill,
+                              size: 72,
+                              color: Colors.white,
                             ),
                           ),
-                        ],
+                        ),
                       )
                     : Container(
                         height: 220,
@@ -251,7 +222,7 @@ class _LessonDetailPageState extends ConsumerState<LessonDetailPage> {
                       final comment = comments[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.primaryLight.withOpacity(0.2),
+                          backgroundColor: AppColors.primaryLight.withValues(alpha: 0.2),
                           child: Text(
                             comment.user.name[0].toUpperCase(),
                             style: const TextStyle(color: AppColors.primary),
@@ -294,4 +265,3 @@ class _LessonDetailPageState extends ConsumerState<LessonDetailPage> {
     return 'Только что';
   }
 }
-

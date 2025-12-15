@@ -8,7 +8,7 @@ export interface SmsProvider {
 }
 
 function createSmsProvider(): SmsProvider {
-  if (config.nodeEnv === 'development' || config.nodeEnv === 'test') {
+  if (config.nodeEnv === 'development' || config.nodeEnv === 'test' || config.testMode) {
     return new MockSmsProvider();
   }
 

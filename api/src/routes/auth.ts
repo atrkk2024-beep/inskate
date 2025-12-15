@@ -80,12 +80,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
-    // In development, return the code for testing
+    // In development or test mode, return the code for testing
     const responseData: { expiresIn: number; code?: string } = {
       expiresIn: config.otp.expiryMinutes * 60,
     };
 
-    if (config.nodeEnv === 'development') {
+    if (config.nodeEnv === 'development' || config.testMode) {
       responseData.code = code;
     }
 

@@ -4,6 +4,7 @@ export const config = {
   // Server
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
+  testMode: process.env.TEST_MODE === 'true',
 
   // URLs
   apiUrl: process.env.API_URL || 'http://localhost:3000',
